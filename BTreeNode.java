@@ -194,7 +194,293 @@ class BTreeNode<T extends Comparable<T>> {
 	// A function to delete the given key from the sub-tree rooted with this node 
 	public BTreeNode<T> delete(T key) 
 	{ 
-		// Your code goes here
+		int idx = findKey(key); 
+  
+		// The key to be removed is present in this node 
+		if (idx < keyTally && keys[idx].equals(key)) 
+		{ 
+	  
+			// If the node is a leaf node - removeFromLeaf is called 
+			// Otherwise, removeFromNonLeaf function is called 
+			if (leaf) 
+				removeFromLeaf(idx); 
+			else
+				removeFromNonLeaf(idx); 
+		} 
+		else
+		{ 
+	  
+			// If this node is a leaf node, then the key is not present in tree 
+			if (leaf) 
+			{ 
+				return this; 
+			} 
+	  
+			// The key to be removed is present in the sub-tree rooted with this node 
+			// The flag indicates whether the key is present in the sub-tree rooted 
+			// with the last child of this node 
+			Boolean flag = ( (idx==keyTally)? true : false ); 
+	  
+			// If the child where the key is supposed to exist has less that t keys, 
+			// we fill that child 
+			if (references[idx].keyTally < m) 
+				fill(idx); 
+	  
+			// If the last child has been merged, it must have merged with the previous 
+			// child and so we recurse on the (idx-1)th child. Else, we recurse on the 
+			// (idx)th child which now has atleast t keys 
+			if (flag && idx > keyTally) 
+				references[idx-1].delete(key); 
+			else
+				references[idx].delete(key); 
+		} 
+		return this; 
 	}
+
+
+
+
+	// A function to remove the idx-th key from this node - which is a leaf node 
+	public void removeFromLeaf (int idx) 
+	{ 
+  
+    	// Move all the keys after the idx-th pos one place backward 
+    	for (int i=idx+1; i<keyTally; ++i) 
+        	keys[i-1] = keys[i]; 
+  
+	    // Reduce the count of keys 
+    	keyTally--; 
+  
+  	  	return; 
+	} 
+
+
+	// A function to remove the idx-th key from this node - which is a non-leaf node 
+	public void removeFromNonLeaf(int idx) 
+	{ 
+  
+		T  k = (T)keys[idx]; 
+
+	
+		// If the child that precedes k (C[idx]) has atleast ts keys, 
+		// find the predecessor 'pred' of k in the subtree rooted at 
+		// C[idx]. Replace k by pred. Recursively delete pred 
+		// in C[idx] 
+		if (references[idx].keyTally >= m) 
+		{ 
+			T pred = getPred(idx); 
+			keys[idx] = pred; 
+			references[idx].delete(pred); 
+		} 
+	
+		// If the child C[idx] has less that t keys, examine C[idx+1]. 
+		// If C[idx+1] has atleast t keys, find the successor 'succ' of k in 
+		// the subtree rooted at C[idx+1] 
+		// Replace k by succ 
+		// Recursively delete succ in C[idx+1] 
+		else if  (references[idx+1].keyTally >= m) 
+		{ 
+			T succ = getSucc(idx); 
+			keys[idx] = succ; 
+			references[idx+1].delete(succ); 
+		} 
+	
+		// If both C[idx] and C[idx+1] has less that t keys,merge k and all of C[idx+1] 
+		// into C[idx] 
+		// Now C[idx] contains 2t-1 keys 
+		// Free C[idx+1] and recursively delete k from C[idx] 
+		else
+		{ 
+			merge(idx); 
+			references[idx].delete(k); 
+		} 
+		return; 
+	} 
+
+		// A function to get predecessor of keys[idx] 
+	public T getPred(int idx) 
+	{ 
+		// Keep moving to the right most node until we reach a leaf 
+		BTreeNode<T> cur=references[idx]; 
+		while (!cur.leaf) 
+			cur = cur.references[cur.keyTally]; 
+	
+		// Return the last key of the leaf 
+		return (T)cur.keys[cur.keyTally-1]; 
+	} 
+	
+
+
+
+	public T getSucc(int idx) 
+	{ 
+	
+		// Keep moving the left most node starting from C[idx+1] until we reach a leaf 
+		BTreeNode<T> cur = references[idx+1]; 
+		while (!cur.leaf) 
+			cur = cur.references[0]; 
+	
+		// Return the first key of the leaf 
+		return (T)cur.keys[0]; 
+	} 
+
+		// A function to fill child C[idx] which has less than t-1 keys 
+	public void fill(int idx) 
+	{ 
+	
+		// If the previous child(C[idx-1]) has more than t-1 keys, borrow a key 
+		// from that child 
+		if (idx!=0 && references[idx-1].keyTally>=m) 
+			borrowFromPrev(idx); 
+	
+		// If the next child(C[idx+1]) has more than t-1 keys, borrow a key 
+		// from that child 
+		else if (idx!=keyTally && references[idx+1].keyTally>=m) 
+			borrowFromNext(idx); 
+	
+		// Merge C[idx] with its sibling 
+		// If C[idx] is the last child, merge it with with its previous sibling 
+		// Otherwise merge it with its next sibling 
+		else
+		{ 
+			if (idx != keyTally) 
+				merge(idx); 
+			else
+				merge(idx-1); 
+		} 
+		return; 
+	} 
+
+		// A function to borrow a key from C[idx-1] and insert it 
+	// into C[idx] 
+	public void borrowFromPrev(int idx) 
+	{ 
+	
+		BTreeNode<T> child=references[idx]; 
+		BTreeNode<T> sibling=references[idx-1]; 
+	
+		// The last key from C[idx-1] goes up to the parent and key[idx-1] 
+		// from parent is inserted as the first key in C[idx]. Thus, the  loses 
+		// sibling one key and child gains one key 
+	
+		// Moving all key in C[idx] one step ahead 
+		for (int i=child.keyTally-1; i>=0; --i) 
+			child.keys[i+1] = child.keys[i]; 
+	
+		// If C[idx] is not a leaf, move all its child pointers one step ahead 
+		if (!child.leaf) 
+		{ 
+			for(int i=child.n; i>=0; --i) 
+				child.references[i+1] = child.references[i]; 
+		} 
+	
+		// Setting child's first key equal to keys[idx-1] from the current node 
+		child.keys[0] = keys[idx-1]; 
+	
+		// Moving sibling's last child as C[idx]'s first child 
+		if(!child.leaf) 
+			child.references[0] = sibling.references[sibling.keyTally]; 
+	
+		// Moving the key from the sibling to the parent 
+		// This reduces the number of keys in the sibling 
+		keys[idx-1] = sibling.keys[sibling.keyTally-1]; 
+	
+		child.keyTally += 1; 
+		sibling.keyTally -= 1; 
+	
+		return; 
+	} 
+
+	// A function to borrow a key from the C[idx+1] and place 
+	// it in C[idx] 
+	public void borrowFromNext(int idx) 
+	{ 
+	
+		BTreeNode<T> child=references[idx]; 
+		BTreeNode<T> sibling=references[idx+1]; 
+	
+		// keys[idx] is inserted as the last key in C[idx] 
+		child.keys[(child.keyTally)] = keys[idx]; 
+	
+		// Sibling's first child is inserted as the last child 
+		// into C[idx] 
+		if (!(child.leaf)) 
+			child.references[(child.keyTally)+1] = sibling.references[0]; 
+	
+		//The first key from sibling is inserted into keys[idx] 
+		keys[idx] = sibling.keys[0]; 
+	
+		// Moving all keys in sibling one step behind 
+		for (int i=1; i<sibling.keyTally; ++i) 
+			sibling.keys[i-1] = sibling.keys[i]; 
+	
+		// Moving the child pointers one step behind 
+		if (!sibling.leaf) 
+		{ 
+			for(int i=1; i<=sibling.keyTally; ++i) 
+				sibling.references[i-1] = sibling.references[i]; 
+		} 
+	
+		// Increasing and decreasing the key count of C[idx] and C[idx+1] 
+		// respectively 
+		child.keyTally += 1; 
+		sibling.keyTally -= 1; 
+	
+		return; 
+	} 
+
+	// A function to merge C[idx] with C[idx+1] 
+	// C[idx+1] is freed after merging 
+	public void merge(int idx) 
+	{ 
+		BTreeNode<T> child = references[idx]; 
+		BTreeNode<T> sibling = references[idx+1]; 
+	
+		// Pulling a key from the current node and inserting it into (t-1)th 
+		// position of C[idx] 
+		child.keys[m-1] = keys[idx]; 
+	
+		// Copying the keys from C[idx+1] to C[idx] at the end 
+		for (int i=0; i<sibling.keyTally; ++i) 
+			child.keys[i+m] = sibling.keys[i]; 
+	
+		// Copying the child pointers from C[idx+1] to C[idx] 
+		if (!child.leaf) 
+		{ 
+			for(int i=0; i<=sibling.keyTally; ++i) 
+				child.references[i+m] = sibling.references[i]; 
+		} 
+	
+		// Moving all keys after idx in the current node one step before - 
+		// to fill the gap created by moving keys[idx] to C[idx] 
+		for (int i=idx+1; i<keyTally; ++i) 
+			keys[i-1] = keys[i]; 
+	
+		// Moving the child pointers after (idx+1) in the current node one 
+		// step before 
+		for (int i=idx+2; i<=keyTally; ++i) 
+			references[i-1] = references[i]; 
+	
+		// Updating the key count of child and the current node 
+		child.keyTally += sibling.keyTally+1; 
+		keyTally--; 
+
+		return; 
+	} 
+
+	// A utility function that returns the index of the first key that is 
+	// greater than or equal to k 
+	public int findKey(T k) 
+	{ 
+		int idx=0; 
+		while (idx<keyTally && keys[idx].compareTo(k) < 0) 
+			++idx; 
+		return idx; 
+	} 
+
+
+
+
+
 
 }
