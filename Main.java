@@ -5,7 +5,7 @@ public class Main {
     {
 	BTree<Integer> tree = new BTree<Integer>(2); // A B-Tree with order 4 (2*m)
    
-	tree.insert(20);
+/*	tree.insert(20);
 	tree.insert(10);
 	tree.insert(30);
 	tree.insert(50);
@@ -13,7 +13,22 @@ public class Main {
 	tree.insert(60); 
 	tree.insert(90);
 	tree.insert(70);
+	tree.insert(80); */
+	tree.insert(76);
+	tree.insert(88);
+	tree.insert(23);
+	tree.insert(42);
+	tree.insert(77);
+	tree.insert(900); 
+	tree.insert(2);
+	tree.insert(740);
 	tree.insert(80);
+	tree.insert(21);
+	tree.insert(70);
+	tree.insert(90); 
+	
+	
+
 
 	System.out.println("Structure of the constucted tree is : ");
 	tree.print();
@@ -29,6 +44,26 @@ public class Main {
 	tree.print();
 
 	value = 50;
+	tree.delete(value);
+	System.out.println("Structure of the tree after delete of : " + value);
+	tree.print();
+
+	value = 88;
+	tree.delete(value);
+	System.out.println("Structure of the tree after delete of : " + value);
+	tree.print();
+
+	value = 900;
+	tree.delete(value);
+	System.out.println("Structure of the tree after delete of : " + value);
+	tree.print();
+
+	value = 42;
+	tree.delete(value);
+	System.out.println("Structure of the tree after delete of : " + value);
+	tree.print();
+
+	value = 81;
 	tree.delete(value);
 	System.out.println("Structure of the tree after delete of : " + value);
 	tree.print();

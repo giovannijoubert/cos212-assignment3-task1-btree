@@ -230,10 +230,24 @@ class BTreeNode<T extends Comparable<T>> {
 			// child and so we recurse on the (idx-1)th child. Else, we recurse on the 
 			// (idx)th child which now has atleast t keys 
 			if (flag && idx > keyTally) 
-				references[idx-1].delete(key); 
+				return references[idx-1].delete(key); 
 			else
+			{
 				references[idx].delete(key); 
+			}
 		} 
+
+		for(int i = 0; i < m*2; i++){
+			if (i>keyTally){
+				references[i] = null;
+			}
+		}
+
+		if (keyTally == 0)
+		{
+			return references[0];
+		}
+
 		return this; 
 	}
 
@@ -328,15 +342,15 @@ class BTreeNode<T extends Comparable<T>> {
 	public void fill(int idx) 
 	{ 
 	
-		// If the previous child(C[idx-1]) has more than t-1 keys, borrow a key 
-		// from that child 
-		if (idx!=0 && references[idx-1].keyTally>=m) 
-			borrowFromPrev(idx); 
-	
 		// If the next child(C[idx+1]) has more than t-1 keys, borrow a key 
 		// from that child 
-		else if (idx!=keyTally && references[idx+1].keyTally>=m) 
+		if (idx!=keyTally && references[idx+1].keyTally>=m) 
 			borrowFromNext(idx); 
+		
+		// If the previous child(C[idx-1]) has more than t-1 keys, borrow a key 
+		// from that child 
+		else if (idx!=0 && references[idx-1].keyTally>=m) 
+		borrowFromPrev(idx); 
 	
 		// Merge C[idx] with its sibling 
 		// If C[idx] is the last child, merge it with with its previous sibling 
@@ -370,7 +384,7 @@ class BTreeNode<T extends Comparable<T>> {
 		// If C[idx] is not a leaf, move all its child pointers one step ahead 
 		if (!child.leaf) 
 		{ 
-			for(int i=child.n; i>=0; --i) 
+			for(int i=child.keyTally; i>=0; --i) 
 				child.references[i+1] = child.references[i]; 
 		} 
 	
@@ -479,6 +493,8 @@ class BTreeNode<T extends Comparable<T>> {
 	} 
 
 
+
+	
 
 
 
